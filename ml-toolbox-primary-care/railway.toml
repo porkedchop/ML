@@ -1,0 +1,104 @@
+# railway.toml
+# Railway deployment configuration
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pip install -e ."
+
+[deploy]
+startCommand = "uvicorn ml_toolbox.serving.api:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[env]
+PYTHON_VERSION = "3.10"
+
+---
+
+# nixpacks.toml
+# Nixpacks configuration for Railway
+
+[phases.setup]
+nixPkgs = ["python310", "gcc", "postgresql", "git"]
+
+[phases.install]
+cmds = ["pip install --upgrade pip", "pip install -r requirements-railway.txt"]
+
+[phases.build]
+cmds = ["python -m spacy download en_core_web_sm || true"]
+
+[start]
+cmd = "uvicorn ml_toolbox.serving.api:app --host 0.0.0.0 --port $PORT"
+
+---
+
+# railway.json
+# Alternative Railway configuration (JSON format)
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install -r requirements-railway.txt && pip install -e ."
+  },
+  "deploy": {
+    "startCommand": "uvicorn ml_toolbox.serving.api:app --host 0.0.0.0 --port ${PORT:-8000}",
+    "healthcheckPath": "/health",
+    "region": "us-west1",
+    "environmentVariables": {
+      "PYTHON_VERSION": "3.10",
+      "ENVIRONMENT": "production",
+      "MAX_WORKERS": "1",
+      "WEB_CONCURRENCY": "2"
+    }
+  }
+}
+
+---
+
+# Procfile (Alternative for Railway)
+web: uvicorn ml_toolbox.serving.api:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1
+
+---
+
+# .env.example (For Railway environment variables)
+# Railway Environment Variables
+# Copy to Railway dashboard or use Railway CLI
+
+# Application Settings
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+SECRET_KEY=your-secret-key-here
+
+# Database (Railway PostgreSQL)
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+DATABASE_POOL_SIZE=5
+DATABASE_MAX_OVERFLOW=10
+
+# Redis (Railway Redis)
+REDIS_URL=${{Redis.REDIS_URL}}
+CACHE_TTL=3600
+
+# Model Storage (Railway Volumes or External)
+MODEL_STORAGE_TYPE=volume  # or 's3'
+MODEL_PATH=/app/models
+
+# Optional: External Storage
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+S3_BUCKET_NAME=
+S3_REGION=us-west-2
+
+# API Settings
+API_RATE_LIMIT=100
+API_TIMEOUT=30
+CORS_ORIGINS=*
+
+# Monitoring (Optional)
+SENTRY_DSN=
+DATADOG_API_KEY=
+
+# ML Configuration
+AUTO_RETRAIN=false
+DRIFT_THRESHOLD=0.2
+MODEL_CACHE_SIZE=5
