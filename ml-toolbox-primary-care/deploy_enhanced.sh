@@ -15,6 +15,6 @@ git commit -m "Add PostgreSQL persistence, authentication, and monitoring"
 git push origin main
 
 echo "Enhanced API deployed. Set these environment variables in Railway:"
-echo "  API_KEY=your-secure-api-key"
+echo "  API_KEY=oRObh0_GxO9yYmLw9wUXuGrPZxLOCShVLjKllvsTMow"
 echo "  ENABLE_AUTH=true"
 echo "  DATABASE_URL is already set by Railway"
