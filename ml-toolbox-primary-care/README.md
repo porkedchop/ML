@@ -1,294 +1,188 @@
-# ML Toolbox for Virtual Primary Care 🏥
+# ML Toolbox for Virtual Primary Care
 
-A lightweight, production-ready ML toolkit optimized for Railway deployment, designed specifically for virtual primary care operations.
+Production-ready machine learning platform for virtual primary care operations. Features PostgreSQL persistence, API authentication, batch processing, and comprehensive monitoring.
 
-## 🚀 Quick Start
+## Live Deployment
 
-### 1. Organize Project Structure
-```bash
-# First, organize your existing files
-make organize
+Base URL: https://ml-production-1e3f.up.railway.app
+API Docs: https://ml-production-1e3f.up.railway.app/docs
+Metrics: https://ml-production-1e3f.up.railway.app/metrics
 
-# Or manually:
-mkdir -p src/ml_toolbox/serving src/ml_toolbox/tools
-mkdir -p configs data models notebooks tests
+## Current Features
 
-# Move your existing files
-mv api.py src/ml_toolbox/serving/api.py
-mv cli.py src/ml_toolbox/cli.py
-mv requiremets.txt requirements.txt  # Fix typo
-```
+### Core Capabilities
+- Multiple ML algorithms (Random Forest, Gradient Boosting, Logistic Regression)
+- Automatic data cleaning and preprocessing
+- PostgreSQL model persistence (survives restarts)
+- API key authentication for protected endpoints
+- Batch prediction processing
+- Model comparison tools
+- Real-time metrics tracking
 
-### 2. Install Dependencies
-```bash
-# Create virtual environment (recommended)
+### Healthcare Models
+- No-show prediction (92.4% accuracy)
+- 30-day readmission risk (75.3% accuracy)
+- Custom model training for any CSV dataset
+
+## Quick Start
+
+### 1. Clone and Setup
+git clone https://github.com/porkedchop/ML.git
+cd ml-toolbox-primary-care
 python -m venv venv
-source venv/bin/activate  # On Mac/Linux
-# or
-venv\Scripts\activate  # On Windows
-
-# Install dependencies
+source venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
-```
 
-### 3. Run Locally
-```bash
-# Start API server
-uvicorn src.ml_toolbox.serving.api:app --reload --port 8000
+### 2. Test Locally
+python -m uvicorn src.ml_toolbox.serving.api:app --reload --port 8000
 
-# Or using make
-make run-api
+### 3. Use the API
+# Check health
+curl https://ml-production-1e3f.up.railway.app/health | python -m json.tool
 
-# Use CLI
-python -m ml_toolbox.cli --help
-```
+# List models
+curl https://ml-production-1e3f.up.railway.app/models | python -m json.tool
 
-## 📁 Project Structure
+# Train model (requires API key)
+curl -X POST -F "file=@data.csv" -H "X-API-Key: your-key" 'https://ml-production-1e3f.up.railway.app/train/advanced?target=outcome&model_id=my_model'
 
-```
+# Make prediction
+curl -X POST https://ml-production-1e3f.up.railway.app/predict -H "Content-Type: application/json" -d '{"features":{"age":45,"gender":0},"model_id":"my_model"}' | python -m json.tool
+
+## Project Structure
+
 ml-toolbox-primary-care/
-├── src/
-│   └── ml_toolbox/
-│       ├── __init__.py
-│       ├── cli.py              # Command-line interface
-│       ├── serving/
-│       │   ├── __init__.py
-│       │   └── api.py          # FastAPI server
-│       └── tools/
-│           ├── __init__.py
-│           └── (ml tools)      # ML utilities
+├── src/ml_toolbox/
+│   ├── cli.py
+│   ├── serving/
+│   │   ├── api.py
+│   │   └── api_enhanced.py
+│   └── tools/
+├── data/
+├── models/
 ├── configs/
-│   └── default.yaml            # Configuration
-├── data/                       # Data files (gitignored)
-├── models/                     # Model files (gitignored)
-├── notebooks/                  # Jupyter notebooks
-├── tests/                      # Test files
-├── railway.toml               # Railway config
-├── requirements.txt           # Dependencies
-├── setup.py                   # Package setup
-├── Makefile                   # Dev commands
-├── .env.example               # Environment template
-├── .gitignore                 # Git exclusions
-└── README.md                  # This file
-```
+├── tests/
+├── railway.toml
+├── requirements.txt
+├── Dockerfile
+├── setup.py
+├── USER_GUIDE.md
+└── README.md
 
-## 🚂 Railway Deployment
+## Railway Deployment
 
 ### Prerequisites
-- Railway account ([sign up here](https://railway.app))
-- Railway CLI (optional): `npm install -g @railway/cli`
+- Railway account (https://railway.app)
 - GitHub repository
+- PostgreSQL service (auto-provisioned)
 
-### Method 1: Railway Dashboard (Easiest)
+### Deploy
+1. Push to GitHub
+2. Connect repo in Railway dashboard
+3. Set environment variables:
+  - API_KEY: your-secure-key
+  - ENABLE_AUTH: true
+  - DATABASE_URL: (auto-set)
 
-1. **Push to GitHub:**
-```bash
-git init
+### Update
 git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/YOUR_USERNAME/ml-toolbox-primary-care.git
-git push -u origin main
-```
+git commit -m "Update"
+git push origin main
 
-2. **Deploy on Railway:**
-- Go to [Railway Dashboard](https://railway.app/dashboard)
-- Click "New Project" → "Deploy from GitHub repo"
-- Select your repository
-- Add services: PostgreSQL and Redis (optional)
-- Railway will auto-deploy!
+### Monitor
+railway logs --tail
 
-### Method 2: Railway CLI
+## API Endpoints
 
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| /health | GET | No | System health |
+| /metrics | GET | No | Usage metrics |
+| /models | GET | No | List models |
+| /models/details/{id} | GET | No | Model info |
+| /train/simple | POST | No | Basic training |
+| /train/advanced | POST | Yes | Advanced training |
+| /predict | POST | No | Single prediction |
+| /predict/batch | POST | No | Batch predictions |
+| /models/compare | POST | Yes | Compare models |
+| /clean/preview | POST | No | Preview data cleaning |
 
-# Login
-railway login
+## CLI Usage
 
-# Initialize project
-railway init
+export API_URL=https://ml-production-1e3f.up.railway.app
+export API_KEY=your-api-key
 
-# Link to existing project (if you have one)
-railway link
+# Profile data
+python -m ml_toolbox.cli profile --input data.csv
 
-# Add services
-railway add
+# Train locally
+python -m ml_toolbox.cli train-simple --input data.csv --target outcome --name model
 
-# Deploy
-railway up
+# List remote models
+python -m ml_toolbox.cli list-models --api-url $API_URL
 
-# Open deployed app
-railway open
-```
+## Authentication
 
-### Environment Variables
+Protected endpoints require:
+-H "X-API-Key: your-api-key"
 
-Set these in Railway dashboard or CLI:
+Generate key:
+python -c "import secrets; print(secrets.token_urlsafe(32))"
 
-```bash
-# Railway provides automatically
-PORT=8000
-DATABASE_URL=postgresql://...
-REDIS_URL=redis://...
+## Sample Datasets
 
-# You need to set
-ENVIRONMENT=production
-MODEL_STORAGE_TYPE=local
-LOG_LEVEL=INFO
-```
+- noshow_training.csv: Appointment no-show prediction
+- readmission_training.csv: 30-day readmission risk
+- ml_primary_care_synthetic.csv: Combined healthcare metrics
 
-## 🔧 API Usage
+## Performance
 
-### Health Check
-```bash
-curl https://your-app.railway.app/health
-```
+- auth_test: 92.4% accuracy, 0.59 AUC
+- readmission_model_v2: 75.3% accuracy, 0.66 AUC
 
-### Upload Model
-```bash
-curl -X POST -F "file=@model.pkl" \
-  https://your-app.railway.app/models/upload?model_name=my_model
-```
+## Troubleshooting
 
-### Make Prediction
-```bash
-curl -X POST https://your-app.railway.app/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "features": {
-      "age": 45,
-      "prior_no_shows": 2,
-      "distance_to_clinic": 5.2
-    },
-    "model_name": "my_model"
-  }'
-```
+### Models disappear
+- Check DATABASE_URL configured
+- Verify "persisted": true in response
+- Check /metrics for models_in_database
 
-### Train from CSV
-```bash
-curl -X POST -F "file=@data.csv" \
-  https://your-app.railway.app/train/csv?target_column=no_show&model_name=new_model
-```
+### Auth errors
+- Verify API_KEY in Railway
+- Set ENABLE_AUTH=true
+- Include API key header
 
-## 🖥️ CLI Usage
+### Feature mismatch
+- Check /models/details/{id}
+- Match exact feature names
+- Missing features default to 0
 
-### Profile Data
-```bash
-ml-toolbox profile --input data.csv --output profile.json
-```
+## Tips for Railway
 
-### Train Model
-```bash
-ml-toolbox train-simple --input data.csv --target no_show --name my_model
-```
+- Memory limits: Monitor usage
+- Storage: PostgreSQL for persistence
+- Scaling: Auto-handled
+- Costs: Check dashboard
+- Debugging: railway logs
 
-### Make Predictions
-```bash
-ml-toolbox predict --input test.csv --model my_model --output results.csv
-```
+## Next Steps
 
-### Check Status
-```bash
-ml-toolbox status
-```
+- Add more training data
+- Implement user management
+- Create web interface
+- Add monitoring dashboard
+- Integrate with EHR systems
 
-## 📊 Features
+## Repository
 
-- **No-Show Prediction**: Predict appointment no-shows
-- **Patient Triage**: Classify message urgency
-- **Data Profiling**: Analyze data quality and statistics
-- **Auto-ML**: Automatic model selection and training
-- **Model Management**: Upload, store, and version models
-- **Batch Processing**: Handle multiple predictions efficiently
-- **Caching**: Redis integration for performance
-- **Health Monitoring**: Built-in health checks and metrics
+GitHub: https://github.com/porkedchop/ML
+Issues: https://github.com/porkedchop/ML/issues
 
-## 🛠️ Development
+## License
 
-### Install Development Dependencies
-```bash
-pip install pytest black flake8 mypy pre-commit
-```
-
-### Run Tests
-```bash
-pytest tests/
-```
-
-### Format Code
-```bash
-black src/ tests/
-```
-
-### Lint Code
-```bash
-flake8 src/ tests/
-```
-
-## 📈 Monitoring
-
-Railway provides built-in metrics. Additionally, you can:
-
-1. View logs: `railway logs`
-2. Check metrics in Railway dashboard
-3. Set up custom alerts (Railway integrations)
-
-## 🔐 Security
-
-- Environment variables for sensitive data
-- Input validation with Pydantic
-- Rate limiting on API endpoints
-- CORS configuration
-- PHI handling considerations
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📝 License
-
-MIT License - see LICENSE file
-
-## 💡 Tips for Railway
-
-1. **Memory Management**: Railway has memory limits. Use model caching wisely.
-2. **Storage**: Use Redis for temporary data, PostgreSQL for persistent data.
-3. **Scaling**: Railway auto-scales, but monitor your usage.
-4. **Costs**: Monitor your Railway usage dashboard to control costs.
-5. **Logs**: Use `railway logs` to debug issues.
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Import errors**: Make sure you installed the package: `pip install -e .`
-2. **Port issues**: Railway provides PORT automatically, don't hardcode it
-3. **Memory issues**: Reduce MODEL_CACHE_SIZE or use smaller models
-4. **Storage issues**: Use external storage (S3) for large models
-
-### Get Help
-
-- Railway Discord: https://discord.gg/railway
-- GitHub Issues: Create an issue in your repo
-- Railway Docs: https://docs.railway.app
-
-## 🎯 Next Steps
-
-1. ✅ Organize project structure
-2. ✅ Install dependencies  
-3. ✅ Test locally
-4. ⬜ Push to GitHub
-5. ⬜ Deploy to Railway
-6. ⬜ Add PostgreSQL/Redis
-7. ⬜ Upload your models
-8. ⬜ Start making predictions!
+MIT License
 
 ---
 
-Built with ❤️ for Virtual Primary Care
+Built for Virtual Primary Care
