@@ -1,0 +1,16 @@
+age,length_of_stay,num_diagnoses,num_medications,er_visits_year,discharge_disposition,a1c_level,diabetes_med_change,readmitted_30days
+65,4,5,12,2,Home,7.5,0,0
+72,8,7,18,4,SNF,9.2,1,1
+45,3,3,8,1,Home,6.8,0,0
+58,6,6,15,3,Home,8.1,1,1
+70,10,8,20,5,Rehab,10.5,1,1
+52,2,2,6,0,Home,6.2,0,0
+68,5,4,10,2,Home,7.8,0,0
+75,12,9,22,6,SNF,11.2,1,1
+41,1,2,5,1,Home,5.9,0,0
+62,7,5,14,3,Home,8.5,1,1
+55,4,4,11,2,Home,7.2,0,0
+71,9,6,16,4,Rehab,9.8,1,1
+48,3,3,9,1,Home,6.5,0,0
+64,6,5,13,2,Home,8.0,1,0
+73,11,8,19,5,SNF,10.8,1,1
