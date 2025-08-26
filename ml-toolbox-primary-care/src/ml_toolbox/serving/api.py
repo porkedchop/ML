@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional
 
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import pandas as pd
 import numpy as np
 import joblib
@@ -35,10 +35,14 @@ MODELS = {}
 MODEL_DIR = Path("/tmp/models")
 MODEL_DIR.mkdir(exist_ok=True)
 
-# Request/Response models
+# Request/Response models with Pydantic v2 config
 class PredictionRequest(BaseModel):
     features: Dict[str, Any]
-    model_name: str = "default"
+    model_id: str = Field(default="default", description="Model identifier")
+    
+    model_config = {
+        "protected_namespaces": ()
+    }
 
 class HealthResponse(BaseModel):
     status: str
@@ -63,7 +67,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
-        environment=os.getenv("ENVIRONMENT", "development"),
+        environment=os.getenv("ENVIRONMENT", "production"),
         models_loaded=len(MODELS)
     )
 
@@ -76,100 +80,86 @@ async def list_models():
     }
 
 @app.post("/models/upload")
-async def upload_model(file: UploadFile = File(...), model_name: str = "uploaded_model"):
+async def upload_model(file: UploadFile = File(...), model_id: str = "uploaded_model"):
     """Upload a model file"""
     try:
-        # Save uploaded file
         content = await file.read()
-        model_path = MODEL_DIR / f"{model_name}.pkl"
+        model_path = MODEL_DIR / f"{model_id}.pkl"
         
         with open(model_path, "wb") as f:
             f.write(content)
         
-        # Load model into memory
-        MODELS[model_name] = joblib.load(model_path)
+        MODELS[model_id] = joblib.load(model_path)
         
-        return {"status": "success", "message": f"Model '{model_name}' uploaded successfully"}
+        return {"status": "success", "message": f"Model '{model_id}' uploaded successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/predict")
 async def predict(request: PredictionRequest):
     """Make a prediction"""
-    model_name = request.model_name
+    model_id = request.model_id
     
-    if model_name not in MODELS:
-        # Try to load from disk
-        model_path = MODEL_DIR / f"{model_name}.pkl"
+    if model_id not in MODELS:
+        model_path = MODEL_DIR / f"{model_id}.pkl"
         if model_path.exists():
-            MODELS[model_name] = joblib.load(model_path)
+            MODELS[model_id] = joblib.load(model_path)
         else:
-            raise HTTPException(status_code=404, detail=f"Model '{model_name}' not found")
+            raise HTTPException(status_code=404, detail=f"Model '{model_id}' not found")
     
     try:
-        # Get model
-        model_data = MODELS[model_name]
+        model_data = MODELS[model_id]
         if isinstance(model_data, dict):
             model = model_data.get('model', model_data)
         else:
             model = model_data
         
-        # Prepare features
         features_df = pd.DataFrame([request.features])
-        
-        # Make prediction
         prediction = model.predict(features_df)[0]
         
-        # Handle numpy types
         if hasattr(prediction, 'item'):
             prediction = prediction.item()
         
         return {
             "prediction": prediction,
-            "model_name": model_name,
+            "model_id": model_id,
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/train/simple")
-async def train_simple(file: UploadFile = File(...), target: str = "target", model_name: str = "simple_model"):
+async def train_simple(file: UploadFile = File(...), target: str = "target", model_id: str = "simple_model"):
     """Train a simple model from CSV"""
     try:
         from sklearn.ensemble import RandomForestClassifier
-        from sklearn.model_selection import train_test_split
         
-        # Read CSV
         content = await file.read()
         import io
         df = pd.read_csv(io.BytesIO(content))
         
-        # Prepare data
         X = df.drop(columns=[target])
         y = df[target]
         
-        # Handle categorical columns
         for col in X.select_dtypes(include=['object']).columns:
             X[col] = pd.Categorical(X[col]).codes
         
         X = X.fillna(0)
         
-        # Train model
         model = RandomForestClassifier(n_estimators=50, max_depth=10, random_state=42)
         model.fit(X, y)
         
-        # Save model
         model_data = {
             'model': model,
             'features': list(X.columns),
             'target': target
         }
         
-        model_path = MODEL_DIR / f"{model_name}.pkl"
+        model_path = MODEL_DIR / f"{model_id}.pkl"
         joblib.dump(model_data, model_path)
-        MODELS[model_name] = model_data
+        MODELS[model_id] = model_data
         
-        return {"status": "success", "message": f"Model '{model_name}' trained successfully"}
+        return {"status": "success", "message": f"Model '{model_id}' trained successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
