@@ -1,0 +1,4 @@
+age,gender,appointment_lag,prior_no_shows,distance_km,telehealth,sms_received,email_reminder,hour_of_day,day_of_week,clinic_type,insurance_type,socioecon_index,rain_mm,is_holiday_week
+45,0,7,1,5.2,0,1,1,14,2,1,0,0.5,0,0
+32,1,3,0,12.1,1,0,1,10,1,0,1,0.7,5,0
+67,0,14,3,3.5,0,1,0,9,4,2,2,0.3,0,1
