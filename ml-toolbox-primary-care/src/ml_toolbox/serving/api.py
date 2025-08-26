@@ -236,6 +236,14 @@ class DataCleaner:
     @staticmethod
     def encode_categoricals(df: pd.DataFrame, target_col: str = None) -> pd.DataFrame:
         df_encoded = df.copy()
+        
+        # Handle datetime columns - convert to numeric
+        datetime_cols = df_encoded.select_dtypes(include=['datetime64']).columns.tolist()
+        for col in datetime_cols:
+            # Convert datetime to days since earliest date or drop
+            df_encoded[col] = pd.to_numeric(df_encoded[col])
+        
+        # Handle categorical columns
         categorical_cols = df_encoded.select_dtypes(include=['object']).columns.tolist()
         if target_col and target_col in categorical_cols:
             categorical_cols.remove(target_col)
