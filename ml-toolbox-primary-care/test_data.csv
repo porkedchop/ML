@@ -1,0 +1,5 @@
+patient_age,sex,appt_date,noshow,days_in_hospital
+45,M,2024-01-15,0,3
+32,F,2024-01-16,1,0
+67,M,2024-01-17,0,5
+28,F,2024-01-18,0,2

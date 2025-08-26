@@ -1,0 +1,5 @@
+age;gender;visit_date;missed;outcome
+25;Male;2024-01-01;Yes;1
+30;Female;2024-01-02;No;0
+35;Male;2024-01-03;Yes;1
+40;Female;2024-01-04;No;0
