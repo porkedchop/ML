@@ -600,7 +600,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 # Import the CSV handler
-from csv_handler import CSVMapper
+# CSV handler included below
 
 # Add these endpoints to your API
 
