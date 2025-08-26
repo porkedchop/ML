@@ -598,3 +598,53 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+# Import the CSV handler
+from csv_handler import CSVMapper
+
+# Add these endpoints to your API
+
+@app.post("/data/analyze")
+async def analyze_data_format(file: UploadFile = File(...)):
+    """Analyze CSV format and suggest mappings"""
+    try:
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        report, processed_df = CSVMapper.process_csv(content_str)
+        
+        return {
+            "status": "success",
+            "analysis": report,
+            "ready_for_training": True if report['target_detected'] else False
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/train/auto", dependencies=[Depends(verify_api_key)])
+async def train_auto_format(
+    file: UploadFile = File(...),
+    model_id: str = "auto_model",
+    target_hint: Optional[str] = None
+):
+    """Train with automatic format detection"""
+    try:
+        content = await file.read()
+        mapper = CSVMapper()
+        
+        # Auto-process the CSV
+        report, df = mapper.process_csv(content.decode('utf-8'), target_hint)
+        
+        if not report['target_detected']:
+            return {"error": "Cannot detect target. Please specify target_hint parameter"}
+        
+        # Continue with standard training using detected target
+        # ... rest of training code
+        
+        return {
+            "status": "success",
+            "model_id": model_id,
+            "detected_format": report
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
